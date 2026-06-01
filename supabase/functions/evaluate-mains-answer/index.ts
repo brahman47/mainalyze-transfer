@@ -1,6 +1,24 @@
 // supabase/functions/evaluate-mains-answer/index.ts
+// =====================================================
 // Skeleton AI Evaluation Edge Function for Mainalyze
-// This is a basic version using Google Gemini for UPSC Mains answer evaluation.
+// =====================================================
+//
+// WHICH AI IS USED?
+// -----------------
+// This skeleton uses **Google Gemini** (specifically gemini-1.5-flash by default).
+// 
+// You can easily swap it for other models later (Claude, GPT-4o, etc.).
+//
+// API KEY SETUP:
+// --------------
+// 1. Get a free API key from: https://aistudio.google.com/app/apikey
+// 2. Set it as a Supabase secret:
+//    supabase secrets set GEMINI_API_KEY=your_actual_key_here
+//
+// For now, the code expects the secret name: GEMINI_API_KEY
+// (You can change the secret name below if you prefer a different one)
+
+
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -25,10 +43,16 @@ serve(async (req) => {
       )
     }
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiApiKey) {
+    // === API KEY (Google Gemini) ===
+    // Change the secret name here if you want to use a different key name
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'YOUR_GEMINI_API_KEY_HERE'
+
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
       return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY secret not configured' }),
+        JSON.stringify({ 
+          error: 'Google Gemini API key not configured',
+          details: 'Please run: supabase secrets set GEMINI_API_KEY=your_key'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -71,7 +95,7 @@ Be fair, constructive, and specific.`
     }
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

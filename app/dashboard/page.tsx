@@ -159,7 +159,7 @@ export default function DashboardPage() {
                   disabled={evaluating}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {evaluating ? 'Evaluating with AI...' : 'Evaluate Answer with AI (Skeleton)'}
+                  {evaluating ? 'Evaluating with AI...' : 'Evaluate Answer with Google Gemini (Skeleton)'}
                 </button>
 
                 {evaluating && (
@@ -174,12 +174,13 @@ export default function DashboardPage() {
 
                 {evaluationResult && (
                   <div className="mt-6 p-5 bg-gray-50 border border-gray-200 rounded-xl">
-                    <h4 className="font-bold text-lg mb-3">AI Evaluation Result (Skeleton)</h4>
+                    <h4 className="font-bold text-lg mb-3">AI Evaluation Result — Google Gemini (Skeleton)</h4>
                     <pre className="text-xs bg-white p-4 rounded overflow-auto max-h-96 border">
                       {JSON.stringify(evaluationResult, null, 2)}
                     </pre>
                     <p className="mt-3 text-xs text-gray-500">
-                      This is a basic skeleton implementation using Supabase Edge Functions + Gemini.
+                      Powered by <strong>Google Gemini</strong> via Supabase Edge Function.<br />
+                      Set your API key using: <code>supabase secrets set GEMINI_API_KEY=your_key</code>
                     </p>
                   </div>
                 )}
