@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([])
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -17,6 +19,44 @@ export default function DashboardPage() {
     }
     getUser()
   }, [])
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    setUploadError(null)
+    setUploadedUrls([])
+
+    const formData = new FormData()
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed')
+      }
+
+      setUploadedUrls(data.urls || [])
+      if (data.errors && data.errors.length > 0) {
+        setUploadError('Some files failed: ' + data.errors.join(', '))
+      }
+    } catch (err: any) {
+      setUploadError(err.message)
+    } finally {
+      setUploading(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
 
   if (loading) {
     return (
@@ -31,136 +71,73 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
       <p className="text-gray-600 mb-8">{user?.email}</p>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-8">
-        <h2 className="text-xl font-semibold mb-4">Basic Dashboard</h2>
-        <p className="text-gray-600 mb-6">
-          This is a minimal version of the application.
-        </p>
+      <div className="space-y-8">
+        {/* Answer Upload Section */}
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          <h2 className="text-xl font-semibold mb-2">Answer Upload</h2>
+          <p className="text-gray-600 mb-6">
+            Upload your handwritten or typed answers (JPG, PNG, PDF). Max 10MB per file.
+          </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link 
-            href="/dashboard/profile"
-            className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            <div className="font-medium">Profile</div>
-            <div className="text-sm text-gray-500">Manage your account</div>
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-            <div className="h-48 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Mains Evaluation</h3>
-            </div>
-            <p className="text-gray-600 text-sm mb-6">Get AI-powered feedback on your answers</p>
-            <div className="flex gap-3">
-              <Link
-                href="/dashboard/mains"
-                className="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-              >
-                Submit Answer →
-              </Link>
-              <Link
-                href="/dashboard/mains/history"
-                className="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                title="View History"
-              >
-                History
-              </Link>
-            </div>
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+            <input
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-800 disabled:opacity-50"
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              You can select multiple files at once
+            </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Prelims Practice</h3>
+          {uploading && (
+            <div className="mt-4 text-sm text-gray-600 flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-gray-900 rounded-full"></div>
+              Uploading...
             </div>
-            <p className="text-gray-600 text-sm mb-6">Generate custom MCQs for practice</p>
-            <div className="flex gap-3">
-              <Link
-                href="/dashboard/prelims"
-                className="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-              >
-                Generate Questions →
-              </Link>
-              <Link
-                href="/dashboard/prelims/history"
-                className="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                title="View History"
-              >
-                History
-              </Link>
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-          
-          {stats.recentActivity.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No activity yet. Start practicing to see your progress!</p>
+          {uploadError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {uploadError}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {stats.recentActivity.map((activity) => (
-                <div
-                  key={`${activity.type}-${activity.id}`}
-                  className="p-5 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 mb-1">
-                        {activity.type === 'mains'
-                          ? activity.question.substring(0, 60) + '...'
-                          : `${activity.topic} - ${activity.difficulty}`}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(activity.created_at).toLocaleString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    {activity.type === 'mains' && activity.status && (
-                      <span
-                        className={`px-3 py-1 rounded text-xs font-semibold ${
-                          activity.status === 'completed'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : activity.status === 'pending'
-                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
-                        }`}
-                      >
-                        {activity.status}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+          )}
+
+          {uploadedUrls.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Uploaded Files</h3>
+              <ul className="space-y-2 text-sm">
+                {uploadedUrls.map((url, index) => (
+                  <li key={index} className="break-all">
+                    <a 
+                      href={url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      {url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-gray-500">
+                These URLs can be used when submitting for evaluation (feature coming soon in this version).
+              </p>
             </div>
           )}
         </div>
+
+        {/* Basic Info */}
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          <h2 className="text-xl font-semibold mb-4">Basic Dashboard</h2>
+          <p className="text-gray-600">
+            This is a minimal version of the application focused on core authentication and file upload.
+          </p>
+        </div>
       </div>
     </div>
   )
 }
-
