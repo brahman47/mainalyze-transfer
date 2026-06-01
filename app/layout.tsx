@@ -15,7 +15,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mainalyze - UPSC Mains & Prelims Preparation",
+  title: "Mainalyze - Basic Template",
   description: "AI-powered UPSC preparation platform for Mains answer evaluation and Prelims practice questions",
 };
 

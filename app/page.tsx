@@ -26,7 +26,7 @@ export default function Home() {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold text-[#2d3561]">
-                Mainalyze
+                Mainalyze Template
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -318,7 +318,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center text-sm text-slate-400">
-            <p>© 2025 Mainalyze by example. All rights reserved.</p>
+            <p>© 2025 Mainalyze. All rights reserved.</p>
           </div>
         </div>
       </footer>
