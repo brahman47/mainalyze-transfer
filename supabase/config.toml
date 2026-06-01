@@ -1,0 +1,6 @@
+# Minimal Supabase config for edge functions
+[functions]
+# You can add more function-specific settings here
+
+[functions.evaluate-mains-answer]
+# verify_jwt = true   # Recommended in production

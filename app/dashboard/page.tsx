@@ -9,6 +9,12 @@ export default function DashboardPage() {
   const [uploading, setUploading] = useState(false)
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([])
   const [uploadError, setUploadError] = useState<string | null>(null)
+
+  // Skeleton AI Evaluation states
+  const [evaluating, setEvaluating] = useState(false)
+  const [evaluationResult, setEvaluationResult] = useState<any>(null)
+  const [evalError, setEvalError] = useState<string | null>(null)
+
   const supabase = createClient()
 
   useEffect(() => {
@@ -123,9 +129,61 @@ export default function DashboardPage() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-gray-500">
-                These URLs can be used when submitting for evaluation (feature coming soon in this version).
-              </p>
+
+              {/* === Skeleton AI Evaluation Feature === */}
+              <div className="mt-6 pt-6 border-t">
+                <button
+                  onClick={async () => {
+                    setEvaluating(true)
+                    setEvalError(null)
+                    setEvaluationResult(null)
+
+                    try {
+                      const { data, error } = await supabase.functions.invoke('evaluate-mains-answer', {
+                        body: {
+                          question: "Evaluate this UPSC Mains answer",
+                          fileUrls: uploadedUrls,
+                        }
+                      })
+
+                      if (error) throw error
+
+                      setEvaluationResult(data)
+                    } catch (err: any) {
+                      console.error(err)
+                      setEvalError(err.message || 'Failed to get AI evaluation')
+                    } finally {
+                      setEvaluating(false)
+                    }
+                  }}
+                  disabled={evaluating}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {evaluating ? 'Evaluating with AI...' : 'Evaluate Answer with AI (Skeleton)'}
+                </button>
+
+                {evaluating && (
+                  <p className="mt-3 text-sm text-gray-600">Calling Supabase Edge Function + Gemini...</p>
+                )}
+
+                {evalError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    {evalError}
+                  </div>
+                )}
+
+                {evaluationResult && (
+                  <div className="mt-6 p-5 bg-gray-50 border border-gray-200 rounded-xl">
+                    <h4 className="font-bold text-lg mb-3">AI Evaluation Result (Skeleton)</h4>
+                    <pre className="text-xs bg-white p-4 rounded overflow-auto max-h-96 border">
+                      {JSON.stringify(evaluationResult, null, 2)}
+                    </pre>
+                    <p className="mt-3 text-xs text-gray-500">
+                      This is a basic skeleton implementation using Supabase Edge Functions + Gemini.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
