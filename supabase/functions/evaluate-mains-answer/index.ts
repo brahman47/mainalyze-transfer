@@ -1,24 +1,28 @@
 // supabase/functions/evaluate-mains-answer/index.ts
-// =====================================================
-// Skeleton AI Evaluation Edge Function for Mainalyze
-// =====================================================
 //
-// WHICH AI IS USED?
-// -----------------
-// This skeleton uses **Google Gemini** (specifically gemini-1.5-flash by default).
-// 
-// You can easily swap it for other models later (Claude, GPT-4o, etc.).
+// ========================================================
+// SKELETON AI EVALUATION EDGE FUNCTION - NO AI ATTACHED
+// ========================================================
 //
-// API KEY SETUP:
-// --------------
-// 1. Get a free API key from: https://aistudio.google.com/app/apikey
-// 2. Set it as a Supabase secret:
-//    supabase secrets set GEMINI_API_KEY=your_actual_key_here
+// IMPORTANT FOR OPEN SOURCE / TRANSFER:
+// -------------------------------------
+// This function contains NO hardcoded AI provider, NO API keys,
+// and NO service attachments.
 //
-// For now, the code expects the secret name: GEMINI_API_KEY
-// (You can change the secret name below if you prefer a different one)
-
-
+// The recipient is expected to implement their own AI evaluation logic.
+//
+// You can use any provider you want:
+//   - Google Gemini
+//   - OpenAI (GPT-4o, etc.)
+//   - Anthropic Claude
+//   - Any other LLM (local or cloud)
+//   - etc.
+//
+// HOW TO USE THIS SKELETON:
+// 1. Implement the actual AI call inside the TODO section below.
+// 2. Set your own secret(s) using Supabase CLI:
+//    supabase secrets set AI_API_KEY=your_key_here
+// 3. Deploy with: supabase functions deploy evaluate-mains-answer
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -28,13 +32,12 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { question, fileUrls, userId } = await req.json()
+    const { question, fileUrls } = await req.json()
 
     if (!fileUrls || fileUrls.length === 0) {
       return new Response(
@@ -43,119 +46,66 @@ serve(async (req) => {
       )
     }
 
-    // === API KEY (Google Gemini) ===
-    // Change the secret name here if you want to use a different key name
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || 'YOUR_GEMINI_API_KEY_HERE'
+    // =====================================================
+    // TODO: IMPLEMENT YOUR AI EVALUATION HERE
+    // =====================================================
+    //
+    // Example secret name (change this to whatever you prefer):
+    const AI_API_KEY = Deno.env.get('AI_API_KEY')
 
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+    if (!AI_API_KEY) {
       return new Response(
         JSON.stringify({ 
-          error: 'Google Gemini API key not configured',
-          details: 'Please run: supabase secrets set GEMINI_API_KEY=your_key'
+          error: 'AI_API_KEY secret not configured',
+          message: 'Run: supabase secrets set AI_API_KEY=your_key'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // === SKELETON: Basic Evaluation Prompt ===
-    const systemPrompt = `You are an expert UPSC Civil Services Mains examiner. 
-Evaluate the following answer for a UPSC-style question.
+    // ---------------------------------------------------------
+    // EXAMPLE STRUCTURE (commented out)
+    // ---------------------------------------------------------
+    // 
+    // 1. Google Gemini example:
+    // const response = await fetch(`https://generativelanguage...&key=${AI_API_KEY}`, { ... })
+    //
+    // 2. OpenAI example:
+    // const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    //   headers: { 'Authorization': `Bearer ${AI_API_KEY}` },
+    //   ...
+    // })
+    //
+    // 3. You can also use the file URLs to download content in Deno
+    //    and send images/base64 to vision models.
 
-Provide your response strictly in the following JSON format:
-{
-  "score": <number 0-10>,
-  "overall_feedback": "<2-3 sentence summary>",
-  "strengths": ["<point 1>", "<point 2>"],
-  "weaknesses": ["<point 1>", "<point 2>"],
-  "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>"]
-}
-
-Be fair, constructive, and specific.`
-
-    // For skeleton: We send the first file URL (image) + question to Gemini Vision
-    // In production you would handle PDFs + better OCR / multi-file analysis.
-    const firstFileUrl = fileUrls[0]
-
-    const geminiPayload = {
-      contents: [{
-        parts: [
-          { text: `${systemPrompt}\n\nQuestion: ${question || "Not provided"}\n\nAnswer (see attached image):` },
-          { 
-            fileData: {
-              mimeType: "image/jpeg", // Adjust based on actual file if needed
-              fileUri: firstFileUrl 
-            } 
-          }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 1024,
-      }
+    // === CURRENT BEHAVIOR (Safe placeholder) ===
+    // This returns a dummy response so the app doesn't break.
+    // Replace this entire section with real AI logic.
+    const placeholderEvaluation = {
+      score: 0,
+      overall_feedback: "AI evaluation not yet implemented in this skeleton.",
+      strengths: [],
+      weaknesses: [],
+      suggestions: [
+        "Implement your preferred AI provider in the Edge Function.",
+        "Set the corresponding secret using 'supabase secrets set'.",
+        "Replace this placeholder logic with actual model calls."
+      ]
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiPayload)
-      }
-    )
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text()
-      console.error("Gemini Error:", errorText)
-      return new Response(
-        JSON.stringify({ error: 'AI evaluation failed', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const geminiData = await geminiResponse.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ""
-
-    // Try to parse JSON from Gemini response
-    let evaluationResult
-    try {
-      // Gemini sometimes wraps JSON in ```json ... ```
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-      evaluationResult = jsonMatch ? JSON.parse(jsonMatch[0]) : {
-        score: 5,
-        overall_feedback: rawText.substring(0, 500),
-        strengths: [],
-        weaknesses: [],
-        suggestions: []
-      }
-    } catch (parseErr) {
-      evaluationResult = {
-        score: 5,
-        overall_feedback: rawText.substring(0, 800) || "AI returned unstructured response.",
-        strengths: ["Analysis available in raw feedback"],
-        weaknesses: [],
-        suggestions: []
-      }
-    }
-
-    // === SKELETON RESPONSE ===
-    const finalResponse = {
+    return new Response(JSON.stringify({
       success: true,
-      evaluation: evaluationResult,
-      raw_ai_response: rawText,           // Useful for debugging in skeleton
-      evaluated_files: fileUrls,
-      timestamp: new Date().toISOString()
-    }
-
-    return new Response(JSON.stringify(finalResponse), {
+      evaluation: placeholderEvaluation,
+      note: "This is a neutral skeleton. No AI provider is attached.",
+      evaluated_files: fileUrls
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
   } catch (error) {
-    console.error("Edge Function Error:", error)
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal error in evaluation function',
-      }),
+      JSON.stringify({ error: error.message || 'Evaluation function error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
